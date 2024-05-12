@@ -1,0 +1,45 @@
+import abs, Rand from math
+
+hook.Add "PlayerFootstep", "Player Footsteps Dust", ( ply, _, foot, __, volume ) ->
+    boneID = ply\LookupBone( foot == 0 and "ValveBiped.Bip01_L_Foot" or "ValveBiped.Bip01_R_Foot" )
+    if not boneID or boneID < 0
+        return
+
+    matrix = ply\GetBoneMatrix( boneID )
+    unless matrix
+        return
+
+    gravityDirection = ply\GetManipulateBoneAngles( 0 )\Up!
+    boneOrigin = matrix\GetTranslation! + gravityDirection
+    boneAngles = matrix\GetAngles!
+    velocity = ply\GetVelocity! / 10
+
+    mins, maxs = ply\GetCollisionBounds!
+    startSize = ( ( abs( mins[ 3 ] ) + abs( maxs[ 3 ] ) ) + 110 ) * 0.14 + 3
+
+    endSize = startSize + startSize * volume * 2
+    startSize *= volume * 2
+
+    gravity = gravityDirection * velocity * -volume
+    lifeTime = Rand( 2, 3 ) * volume
+
+    for i = 1, 2
+        emitter = ParticleEmitter( boneOrigin, i == 1 )
+
+        particle = emitter\Add( "particle/particle_noisesphere", boneOrigin )
+        if particle
+            particle\SetAngles( boneAngles )
+            particle\SetDieTime( lifeTime )
+            particle\SetLighting( true )
+
+            particle\SetStartAlpha( 200 * volume )
+            particle\SetEndAlpha( 0 )
+
+            particle\SetStartSize( startSize )
+            particle\SetEndSize( endSize )
+
+            particle\SetVelocity( velocity )
+            particle\SetGravity( gravity )
+
+        emitter\Finish!
+    return
